@@ -1,4 +1,4 @@
-module Unification.IO
+module Control.Unification.IO
   ( ioKernel
   , unifyIO
   , IOVar(..)
@@ -8,9 +8,9 @@ import Data.Void
 import Data.IORef
 import Control.Exception
 import Control.Monad.Free
-import Unification.Class
-import Unification.Exception
-import Unification.Kernel
+import Control.Unification.Class
+import Control.Unification.Exception
+import Control.Unification.Kernel
 
 newtype IOVar f = IOVar (IORef (Maybe (Free f (IOVar f))))
 
@@ -24,5 +24,5 @@ ioKernel = Kernel
   , mismatch = \ f g -> throwIO (Mismatch f g)
   }
 
-unifyIO :: Unifiable f => Free f (IOVar f) -> Free f (IOVar f) -> IO (Free f (IOVar f))
+unifyIO :: Unified f => Free f (IOVar f) -> Free f (IOVar f) -> IO (Free f (IOVar f))
 unifyIO = unifyWith ioKernel

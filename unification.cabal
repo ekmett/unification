@@ -9,9 +9,9 @@ maintainer:    Edward A. Kmett <ekmett@gmail.com>
 stability:     experimental
 homepage:      http://github.com/ekmett/unification/
 bug-reports:   http://github.com/ekmett/unification/issues
-copyright:     Copyright (C) 2012 Edward A. Kmett
-synopsis:      Unification for free monads
-description:   Unification for free monads
+copyright:     Copyright (C) 2012-2014 Edward A. Kmett
+synopsis:      Unification for free
+description:   Unification for free
 build-type:    Simple
 extra-source-files: .travis.yml
 
@@ -20,18 +20,22 @@ source-repository head
   location: git://github.com/ekmett/unification.git
 
 library
+  hs-source-dirs: src
   build-depends:
-    base           >= 4       && < 5,
-    free           >= 2.1,
-    semigroups     >= 0.8.3.1,
-    void           >= 0.5.6
+    base           >= 4        && < 5,
+    comonad,
+    containers,
+    free           >= 4.6.1    && < 5,
+    semigroups     >= 0.8.3.1  && < 1,
+    transformers,
+    void           >= 0.5.6    && < 1
 
   exposed-modules:
-    Unification
-    Unification.Class
-    Unification.Kernel
-    Unification.Exception
-    Unification.IO
-    Unification.ST
+    Control.Unification
+    Control.Unification.Class
+    Control.Unification.Kernel
+    Control.Unification.Exception
+    Control.Unification.IO
+    Control.Unification.ST
 
   ghc-options: -Wall

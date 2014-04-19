@@ -1,4 +1,4 @@
-module Unification.Kernel
+module Control.Unification.Kernel
   ( Kernel(..)
   , unifyWith
   , zonkWith
@@ -7,7 +7,7 @@ module Unification.Kernel
 import Data.Void
 import Control.Monad.Free
 import Control.Monad (liftM)
-import Unification.Class
+import Control.Unification.Class
 
 -- Tim Sheard's generic unification via two level types
 
@@ -20,7 +20,10 @@ data Kernel m v f = Kernel
   , mismatch :: f (Free f (v f)) -> f (Free f (v f)) -> m Void
   }
 
-unifyVarWith :: (Monad m, Unifiable) =>
+matchWith :: (a -> b -> c) -> f a -> f b -> Maybe (f c)
+matchWith f = unified (fmap Just . f)
+
+unifyVarWith :: (Monad m, Unified) =>
   Kernel m v f -> v f -> Free f (v f) -> m (Free f (v f))
 unifyVarWith k a x = readVar k a >>= \mt -> case mt of
   Nothing -> do
@@ -32,7 +35,7 @@ unifyVarWith k a x = readVar k a >>= \mt -> case mt of
      writeVar k a x'
      return x'
 
-unifyWith :: (Monad m, Unifiable f) =>
+unifyWith :: (Monad m, Unified f) =>
   Kernel m v f -> Free f (v f) -> Free f (v f) -> m (Free f (v f))
 unifyWith k t@(Pure v) (Pure u) | v == u = return t
 unifyWith k (Pure a) y = unifyVarWith k a y
