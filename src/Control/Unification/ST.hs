@@ -19,8 +19,8 @@ stKernel = Kernel
   , readVar  = \(STVar v)   -> readSTRef v
   , writeVar = \(STVar v) t -> writeSTRef v (Just t)
   , eqVar    = (==)
-  , occurs   = \ v f -> vacuousM $ unsafeIOtoST $ throwIO $ Occurs v f
-  , mismatch = \ f g -> vacuousM $ unsafeIOtoST $ throwIO $ Mismatch f g
+  , occurs   = unsafeIOtoST $ throwIO Occurs
+  , mismatch = unsafeIOtoST $ throwIO Mismatch
   }
 
 unifyST :: Unifiable f =>

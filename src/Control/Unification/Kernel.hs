@@ -1,57 +1,51 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE KindSignatures #-}
 module Control.Unification.Kernel
   ( Kernel(..)
-  , unifyWith
-  , zonkWith
+  , unify
+  , zonk
   ) where
 
-import Data.Void
+import Control.Applicative
 import Control.Monad.Free
-import Control.Monad (liftM)
+import Control.Monad (join)
 import Control.Unification.Class
+import Data.Foldable as F
+import Data.Traversable
 
 -- Tim Sheard's generic unification via two level types
 
-data Kernel m v f = Kernel
+data Kernel (m :: * -> *) (v :: (* -> *) -> *) (f :: * -> *) = Kernel
   { newVar   :: m (v f)
   , readVar  :: v f -> m (Maybe (Free f (v f)))
   , writeVar :: v f -> Free f (v f) -> m ()
   , eqVar    :: v f -> v f -> Bool
-  , occurs   :: v f -> Free f (v f) -> m Void
-  , mismatch :: f (Free f (v f)) -> f (Free f (v f)) -> m Void
+  , occurs   :: forall a. m a
+  , mismatch :: forall a. m a
   }
 
-matchWith :: (a -> b -> c) -> f a -> f b -> Maybe (f c)
-matchWith f = unified (fmap Just . f)
-
-unifyVarWith :: (Monad m, Unified) =>
-  Kernel m v f -> v f -> Free f (v f) -> m (Free f (v f))
-unifyVarWith k a x = readVar k a >>= \mt -> case mt of
+unifyVar :: (Monad m, Alternative m, Unified f) => Kernel m v f -> v f -> Free f (v f) -> m (Free f (v f))
+unifyVar k a x = readVar k a >>= \mt -> case mt of
   Nothing -> do
-    x' <- zonkWith k x
-    if elem v x' then vacuousM $ occurs v x'
-                 else writeVar k a x'
-  Just x -> do
-     x' <- unifyWith k t x
-     writeVar k a x'
-     return x'
+    x' <- zonk k x
+    if F.any (eqVar k a) x' then occurs k
+                            else x' <$ writeVar k a x'
+  Just y -> do
+     y' <- unify k x y
+     y' <$ writeVar k a y'
 
-unifyWith :: (Monad m, Unified f) =>
-  Kernel m v f -> Free f (v f) -> Free f (v f) -> m (Free f (v f))
-unifyWith k t@(Pure v) (Pure u) | v == u = return t
-unifyWith k (Pure a) y = unifyVarWith k a y
-unifyWith k x (Pure a) = unifyVarWith k a x
-unifyWith k (Free xs) (Free ys) =
-  maybe (vacuousM $ mismatch xs ys)
-        (liftM Free . sequence)
-        (matchWith (unifyWith k) xs ys)
+unify :: (Monad m, Alternative m, Unified f) => Kernel m v f -> Free f (v f) -> Free f (v f) -> m (Free f (v f))
+unify k t@(Pure v) (Pure u) | eqVar k v u = return t
+unify k (Pure a) y          = unifyVar k a y
+unify k x (Pure a)          = unifyVar k a x
+unify k (Free xs) (Free ys) = Free <$> unified (unify k) xs ys
+                          <|> mismatch k
 
 -- | Eliminate substitutions
-zonkWith :: (Monad m, Monad f, Traversable f) =>
-  Kernel m v f -> Free f (v f) -> m (Free f (v f))
-zonkWith k t = traverse go t where
+zonk :: (Monad m, Applicative m, Traversable f) => Kernel m v f -> Free f (v f) -> m (Free f (v f))
+zonk k = fmap join . traverse go where
   go v = readVar k v >>= \mv -> case mv of
-    Nothing -> return (return v)
-    Just t2 -> do
-      t3 <- zonkWith k t2
-      writeVar k v t3 -- path compression
-      return t3
+    Nothing -> return $ Pure v
+    Just t -> do
+      t' <- zonk k t
+      t' <$ writeVar k v t' -- path compression

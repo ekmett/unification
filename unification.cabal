@@ -22,13 +22,15 @@ source-repository head
 library
   hs-source-dirs: src
   build-depends:
-    base           >= 4        && < 5,
-    comonad,
-    containers,
-    free           >= 4.6.1    && < 5,
-    semigroups     >= 0.8.3.1  && < 1,
-    transformers,
-    void           >= 0.5.6    && < 1
+    base                >= 4.4      && < 5,
+    comonad             >= 4.0      && < 5,
+    free                >= 4.7      && < 5,
+    mtl                 >= 2.0      && < 2.2,
+    semigroups          >= 0.8.3.1  && < 1,
+    prelude-extras      >= 0.4      && < 1,
+    transformers        >= 0.2      && < 0.4,
+    transformers-compat >= 0.1      && < 1,
+    void                >= 0.5.6    && < 1
 
   exposed-modules:
     Control.Unification
